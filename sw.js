@@ -1,8 +1,8 @@
 function MandelbrotTest (cx, cy, defaultzx, defaultzy) {
   let zx,zy,zx2,zy2;    // komplexní proměnná Z
   let iter;                   // počet iterací
-  zx=0;                               // vynulovat komplexní proměnnou C
-  zy=0;
+  zx=defaultzx;                               // vynulovat komplexní proměnnou C
+  zy=defaultzy;
   const maxiter = 255
   const colorUnit = 255/maxiter
   iter=0;                           // nastavit počitadlo iterací
