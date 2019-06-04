@@ -1,0 +1,22 @@
+{
+  "name": "fractals",
+  "version": "1.0.0",
+  "description": "lets try creating fractals with service workers",
+  "main": "index.js",
+  "scripts": {
+    "test": "test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/houska102/fractal-explorer.git"
+  },
+  "keywords": [
+    "fractals"
+  ],
+  "author": "houska102",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/houska102/fractal-explorer/issues"
+  },
+  "homepage": "https://github.com/houska102/fractal-explorer#readme"
+}
