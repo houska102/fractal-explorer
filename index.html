@@ -1,0 +1,168 @@
+<html>
+  <head>
+    <style>
+      body {
+        padding: 0;
+        margin: 0;
+      }
+      .calculating{
+        position:absolute;
+        top:0;
+        left:0;
+        width:100%;
+        height:100%;
+        background:rgba(0,0,0,0.5)
+      }
+    </style>
+  </head>
+  <body>
+    command scale: <input id="scale" type="number" value="100"><button>generate fullHD</button>
+    <div style="width:100%">
+      <button id="up" style="display:block;margin:20px auto">up</button>
+      <div style="display:flex;justify-content:center">
+        <div>
+          <button id="left"><</button>
+          <button id="bigger">+</button>
+        </div>
+        <canvas id="canvas" width="800" height="800"><div id="calcilating"></div></canvas>
+        <div>
+          <button id="smaller">-</button>
+          <button id="right">></button>
+        </div>
+      </div>
+      <button id="down" style="display:block;margin:20px auto">down</button>
+    </div>
+    <script>
+      var width = 800
+      var height = 800
+      var shiftX = -400
+      var shiftY = -400
+      var enlarge = 150
+      var redPreset = 100
+      var greenPreset = 150
+      var bluePreset = 255
+      var defaultzx=0;                               // vynulovat komplexní proměnnou C
+      var defaultzy=0;
+
+      function generate () {
+        window.navigator.serviceWorker.ready
+        .then((reg) => reg.active.postMessage(JSON.stringify({
+          fractalInfo: {
+            width: width,
+            height: height,
+            defaultzx: defaultzx,
+            defaultzy: defaultzy
+          },
+          shiftX: shiftX,
+           shiftY: shiftY,
+           enlarge: enlarge
+         })))
+      }
+
+      function MandelbrotTest (cx, cy) {
+        let zx,zy,zx2,zy2;    // komplexní proměnná Z
+        let iter;                   // počet iterací
+        zx=defaultzx;                               // vynulovat komplexní proměnnou C
+        zy=defaultzy;
+        const maxiter = 60
+        const colorUnit = 255/maxiter
+        iter=0;                           // nastavit počitadlo iterací
+
+        while (iter<maxiter) {                                // iterační smyčka
+            zx2=zx*zx;                      // zx^2
+            zy2=zy*zy;                      // zy^2
+            zy=2.0*zx*zy+cy;
+            zx=zx2-zy2+cx;                  // z:=z^2+c
+            iter++;
+            if((zx2+zy2)>4.0){
+              break;
+            }        // zvýšit hodnotu počitadla iterací
+        }
+        if (iter==maxiter){                  // bod leží uvnitř Mandelbrotovy množiny
+          return 0
+        } else {
+          return colorUnit*iter
+        }                               // bod leží vně Mandelbrotovy množiny
+      }
+
+      function setPixel (context,x,y,red,green,blue) {
+        context.fillStyle=`rgb(${red},${green},${blue})`
+        context.fillRect(x,y,1,1)
+      }
+
+      const canvas = document.getElementById('canvas')
+      var context = canvas.getContext('2d')
+      document.getElementById('up').addEventListener('click', () => {
+        shiftY -= parseInt(document.getElementById('scale').value)
+        generate()
+      })
+      document.getElementById('down').addEventListener('click', () => {
+        shiftY += parseInt(document.getElementById('scale').value)
+        generate()
+      })
+      document.getElementById('left').addEventListener('click', () => {
+        shiftX -= parseInt(document.getElementById('scale').value)
+        generate()
+      })
+      document.getElementById('right').addEventListener('click', () => {
+        shiftX += parseInt(document.getElementById('scale').value)
+        generate()
+      })
+      document.getElementById('smaller').addEventListener('click', () => {
+        enlarge -= parseInt(document.getElementById('scale').value)
+        shiftX += parseInt(document.getElementById('scale').value)*0.50
+        shiftY += parseInt(document.getElementById('scale').value)*0.50
+        generate()
+      })
+      document.getElementById('bigger').addEventListener('click', () => {
+        enlarge += parseInt(document.getElementById('scale').value)
+        shiftX -= parseInt(document.getElementById('scale').value)*0.5
+        shiftY -= parseInt(document.getElementById('scale').value)*0.5
+        generate()
+      })
+      window.addEventListener('load', () => {
+        if (!('serviceWorker' in navigator)) {
+          // service workers not supported 😣
+          return
+        }
+
+        if (window.navigator && window.navigator.serviceWorker) {
+          window.navigator.serviceWorker.addEventListener("message", (ev) => {
+            let bitmap = new Uint8ClampedArray(width*height*4)
+            console.log(bitmap)
+            bitmapPosition = 0
+            result = ev.data
+            console.log(result)
+            for (let x = 0; x<width; x++) {
+              for (let y = 0; y<height; y++) {
+                let color = result[x][y]
+                if(color === 0) {
+                  bitmap[bitmapPosition] = 0
+                  bitmap[bitmapPosition + 1] = 0
+                  bitmap[bitmapPosition + 2] = 0
+                  bitmap[bitmapPosition + 3] = 255
+                } else {
+                  bitmap[bitmapPosition] = redPreset-color
+                  bitmap[bitmapPosition + 1] = greenPreset-color
+                  bitmap[bitmapPosition + 2] = bluePreset-color
+                  bitmap[bitmapPosition + 3] = 255
+                }
+
+                bitmapPosition += 4
+              /*  if(color === 0) {
+                  setPixel(context,x,y,0,0,0);
+                } else {
+                  setPixel(context,x,y,redPreset-color,greenPreset-color,bluePreset-color);
+                }*/
+              }
+            }
+            const fractal = new ImageData(bitmap,width,height)
+            context.putImageData(fractal, 0, 0)
+            console.log(bitmap)
+          })
+          window.navigator.serviceWorker.register('/sw.js');
+        }
+      })
+    </script>
+  </body>
+</html>
