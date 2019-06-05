@@ -5,6 +5,9 @@ var fs = require('fs');
 http.createServer(function (req, res) {
   var q = url.parse(req.url, true);
   var filename = "." + q.pathname;
+  if(filename === './'){
+    filename = './index.html'
+  }
   console.log(filename)
   fs.readFile(filename, function(err, data) {
     if (err) {
