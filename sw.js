@@ -25,7 +25,7 @@ function MandelbrotTest (cx, cy, defaultzx, defaultzy) {
 }
 
 
-self.addEventListener("message", (event) => {
+onmessage = (event) => {
   var data = JSON.parse(event.data);
   const fractalInfo = data.fractalInfo
   let shiftX = data.shiftX
@@ -39,5 +39,5 @@ self.addEventListener("message", (event) => {
       result[x][y] = color
     }
   }
-  event.source.postMessage(result)
-});
+  postMessage(result)
+}
