@@ -24,7 +24,7 @@
           <button id="left"><</button>
           <button id="bigger">+</button>
         </div>
-        <canvas id="canvas" width="800" height="800"><div id="calcilating"></div></canvas>
+        <canvas id="canvas" width="1920" height="1080"><div id="calcilating"></div></canvas>
         <div>
           <button id="smaller">-</button>
           <button id="right">></button>
@@ -33,96 +33,96 @@
       <button id="down" style="display:block;margin:20px auto">down</button>
     </div>
     <script>
-      var width = 800
-      var height = 800
-      var shiftX = -400
-      var shiftY = -400
-      var enlarge = 150
-      var redPreset = 100
-      var greenPreset = 150
-      var bluePreset = 255
+      var width = 1920
+      var height = 1080
+      var shiftX = -960
+      var shiftY = -540
+      var enlarge = 600
       var defaultzx=0;                               // vynulovat komplexní proměnnou C
       var defaultzy=0;
-      const myWorker = new Worker("sw.js");
 
-      myWorker.onmessage = (ev) => {
+      function generateWithParts () {
+        let parts = []
+        let workers = [
+          new Worker('partWorker.js'),
+          new Worker('partWorker.js'),
+          new Worker('partWorker.js'),
+          new Worker('partWorker.js'),
+          new Worker('partWorker.js'),
+          new Worker('partWorker.js'),
+          new Worker('partWorker.js'),
+          new Worker('partWorker.js')
+        ]
+        workers.forEach((worker, i) => {
+          worker.postMessage(JSON.stringify({
+            id: i,
+            fractalInfo: {
+              width: width,
+              height: height,
+              defaultzx: defaultzx,
+              defaultzy: defaultzy
+            },
+            parts: workers.length,
+            shiftX: shiftX,
+             shiftY: shiftY,
+             enlarge: enlarge
+           }))
+           worker.onmessage = (result) => {
+             parts.push(result.data)
+             if(parts.length === workers.length){
+               drawParts(parts.sort((a, b) => a.id - b.id))
+               workers.forEach(worker => worker.terminate())
+             }
+
+           }
+        })
+      }
+      function drawParts(parts) {
         let bitmap = new Uint8ClampedArray(width*height*4)
-        let bitmapPosition = 0
-        result = ev.data
-        for (let x = 0; x<width; x++) {
-          for (let y = 0; y<height; y++) {
-            let color = result[x][y]
-            if(color === 0) {
-              bitmap[bitmapPosition] = 0
-              bitmap[bitmapPosition + 1] = 0
-              bitmap[bitmapPosition + 2] = 0
-              bitmap[bitmapPosition + 3] = 255
-            } else {
-              bitmap[bitmapPosition] = redPreset-color
-              bitmap[bitmapPosition + 1] = greenPreset-color
-              bitmap[bitmapPosition + 2] = bluePreset-color
-              bitmap[bitmapPosition + 3] = 255
-            }
-
-            bitmapPosition += 4
-          /*  if(color === 0) {
-              setPixel(context,x,y,0,0,0);
-            } else {
-              setPixel(context,x,y,redPreset-color,greenPreset-color,bluePreset-color);
-            }*/
-          }
-        }
+        let bitmapIndex = 0
+        parts.forEach(part => {
+          part.result.forEach(bit => {
+            bitmap[bitmapIndex] = bit
+            bitmapIndex++
+          })
+        })
         const fractal = new ImageData(bitmap,width,height)
         context.putImageData(fractal, 0, 0)
-      }
-
-      function generate () {
-        myWorker.postMessage(JSON.stringify({
-          fractalInfo: {
-            width: width,
-            height: height,
-            defaultzx: defaultzx,
-            defaultzy: defaultzy
-          },
-          shiftX: shiftX,
-           shiftY: shiftY,
-           enlarge: enlarge
-         }))
       }
 
 
       const canvas = document.getElementById('canvas')
       var context = canvas.getContext('2d')
-      document.getElementById('left').addEventListener('click', () => {
-        shiftY -= parseInt(document.getElementById('scale').value)
-        generate()
-      })
-      document.getElementById('right').addEventListener('click', () => {
-        shiftY += parseInt(document.getElementById('scale').value)
-        generate()
-      })
       document.getElementById('up').addEventListener('click', () => {
-        shiftX -= parseInt(document.getElementById('scale').value)
-        generate()
+        shiftY -= parseInt(document.getElementById('scale').value)
+        generateWithParts()
       })
       document.getElementById('down').addEventListener('click', () => {
+        shiftY += parseInt(document.getElementById('scale').value)
+        generateWithParts()
+      })
+      document.getElementById('left').addEventListener('click', () => {
+        shiftX -= parseInt(document.getElementById('scale').value)
+        generateWithParts()
+      })
+      document.getElementById('right').addEventListener('click', () => {
         shiftX += parseInt(document.getElementById('scale').value)
-        generate()
+        generateWithParts()
       })
       document.getElementById('smaller').addEventListener('click', () => {
         enlarge -= parseInt(document.getElementById('scale').value)
         shiftX += parseInt(document.getElementById('scale').value)*0.50
         shiftY += parseInt(document.getElementById('scale').value)*0.50
-        generate()
+        generateWithParts()
       })
       document.getElementById('bigger').addEventListener('click', () => {
         enlarge += parseInt(document.getElementById('scale').value)
         shiftX -= parseInt(document.getElementById('scale').value)*0.5
         shiftY -= parseInt(document.getElementById('scale').value)*0.5
-        generate()
+        generateWithParts()
       })
       window.addEventListener('load', () => {
-        generate()
+        generateWithParts()
       })
     </script>
   </body>
