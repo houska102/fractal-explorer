@@ -24,7 +24,7 @@
           <button id="left"><</button>
           <button id="bigger">+</button>
         </div>
-        <canvas id="canvas" width="1920" height="1080"><div id="calcilating"></div></canvas>
+        <canvas id="canvas" width="1600" height="800"><div id="calcilating"></div></canvas>
         <div>
           <button id="smaller">-</button>
           <button id="right">></button>
@@ -33,26 +33,26 @@
       <button id="down" style="display:block;margin:20px auto">down</button>
     </div>
     <script>
-      var width = 1920
-      var height = 1080
+      var width = 1600
+      var height = 800
       var shiftX = -960
       var shiftY = -540
       var enlarge = 600
       var defaultzx=0;                               // vynulovat komplexní proměnnou C
       var defaultzy=0;
+      var workers = [
+        new Worker('partWorker.js'),
+        new Worker('partWorker.js'),
+        new Worker('partWorker.js'),
+        new Worker('partWorker.js'),
+        new Worker('partWorker.js'),
+        new Worker('partWorker.js'),
+        new Worker('partWorker.js'),
+        new Worker('partWorker.js')
+      ]
 
       function generateWithParts () {
         let parts = []
-        let workers = [
-          new Worker('partWorker.js'),
-          new Worker('partWorker.js'),
-          new Worker('partWorker.js'),
-          new Worker('partWorker.js'),
-          new Worker('partWorker.js'),
-          new Worker('partWorker.js'),
-          new Worker('partWorker.js'),
-          new Worker('partWorker.js')
-        ]
         workers.forEach((worker, i) => {
           worker.postMessage(JSON.stringify({
             id: i,
@@ -71,7 +71,6 @@
              parts.push(result.data)
              if(parts.length === workers.length){
                drawParts(parts.sort((a, b) => a.id - b.id))
-               workers.forEach(worker => worker.terminate())
              }
 
            }
