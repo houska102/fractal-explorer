@@ -1,4 +1,4 @@
 # fractal-explorer
 
-#start
+#run:
 node index.js
