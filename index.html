@@ -16,7 +16,9 @@
     </style>
   </head>
   <body>
-    command scale: <input id="scale" type="number" value="100"><button>generate fullHD</button>
+    command scale: <input id="scale" type="number" value="100">
+    <button id="generateCustom">custom Resolution</button>
+    <button id="download">download</button>
     <div style="width:100%">
       <button id="up" style="display:block;margin:20px auto">up</button>
       <div style="display:flex;justify-content:center">
@@ -33,13 +35,78 @@
       <button id="down" style="display:block;margin:20px auto">down</button>
     </div>
     <script>
+      function resizeCanvas(width, height) {
+        console.log('resizing canvas', width, height)
+        canvas.width = width
+        canvas.height = height
+      }
+      function generateWithParts (customWidth, customHeight) {
+        let parts = []
+        const fractalWidth = customWidth ? customWidth : width
+        const fractalHeight = customHeight ? customHeight : height
+        resizeCanvas(fractalWidth, fractalHeight)
+        console.log(fractalWidth, fractalHeight)
+        workers.forEach((worker, i) => {
+          worker.postMessage(JSON.stringify({
+            id: i,
+            fractalInfo: {
+              width: fractalWidth,
+              height: fractalHeight,
+              defaultzx: defaultzx,
+              defaultzy: defaultzy
+            },
+            parts: workers.length,
+            shiftX: shiftX,
+            shiftY: shiftY,
+            enlarge: enlarge
+           }))
+           worker.onmessage = (result) => {
+             parts.push(result.data)
+             if(parts.length === workers.length){
+               drawParts(parts.sort((a, b) => a.id - b.id), fractalWidth, fractalHeight)
+             }
+
+           }
+        })
+      }
+      function composeFractal (parts, width, height) {
+        console.log('compose fractal start',width, height)
+        let bitmap = new Uint8ClampedArray(width*height*4)
+        let bitmapIndex = 0
+        parts.forEach(part => {
+          part.result.forEach(bit => {
+            bitmap[bitmapIndex] = bit
+            bitmapIndex++
+          })
+        })
+        const fractal = new ImageData(bitmap, width, height)
+        console.log('compose fractal end',width, height)
+        return fractal
+      }
+      function drawParts(parts, width, height) {
+        console.log('drawing', width, height)
+        context.putImageData(composeFractal(parts, width, height), 0, 0)
+      }
+      function generateCustomResolution() {
+        const customWidth = parseInt(prompt('enter width in pixels'))
+        const customHeight = parseInt(prompt('enter height in pixels'))
+        console.log('entered', customWidth, customHeight)
+        generateWithParts(customWidth, customHeight);
+      }
+      function dowloadCanvasImage() {
+        image = canvas.toDataURL("image/png", 1.0).replace("image/png", "image/octet-stream");
+        var link = document.createElement('a');
+        link.download = "my-image.png";
+        link.href = image;
+        link.click();
+      }
       var width = 1600
       var height = 800
       var shiftX = -960
       var shiftY = -540
       var enlarge = 600
-      var defaultzx=0;                               // vynulovat komplexní proměnnou C
-      var defaultzy=0;
+      var defaultzx = 0;                               // vynulovat komplexní proměnnou C
+      var defaultzy = 0;
       var workers = [
         new Worker('partWorker.js'),
         new Worker('partWorker.js'),
@@ -50,45 +117,6 @@
         new Worker('partWorker.js'),
         new Worker('partWorker.js')
       ]
-
-      function generateWithParts () {
-        let parts = []
-        workers.forEach((worker, i) => {
-          worker.postMessage(JSON.stringify({
-            id: i,
-            fractalInfo: {
-              width: width,
-              height: height,
-              defaultzx: defaultzx,
-              defaultzy: defaultzy
-            },
-            parts: workers.length,
-            shiftX: shiftX,
-             shiftY: shiftY,
-             enlarge: enlarge
-           }))
-           worker.onmessage = (result) => {
-             parts.push(result.data)
-             if(parts.length === workers.length){
-               drawParts(parts.sort((a, b) => a.id - b.id))
-             }
-
-           }
-        })
-      }
-      function drawParts(parts) {
-        let bitmap = new Uint8ClampedArray(width*height*4)
-        let bitmapIndex = 0
-        parts.forEach(part => {
-          part.result.forEach(bit => {
-            bitmap[bitmapIndex] = bit
-            bitmapIndex++
-          })
-        })
-        const fractal = new ImageData(bitmap,width,height)
-        context.putImageData(fractal, 0, 0)
-      }
-
 
       const canvas = document.getElementById('canvas')
       var context = canvas.getContext('2d')
@@ -119,6 +147,9 @@
         shiftX -= parseInt(document.getElementById('scale').value)*0.5
         shiftY -= parseInt(document.getElementById('scale').value)*0.5
         generateWithParts()
+      })
+      document.getElementById('generateCustom').addEventListener('click', () => {
+        generateCustomResolution()
       })
       window.addEventListener('load', () => {
         generateWithParts()
